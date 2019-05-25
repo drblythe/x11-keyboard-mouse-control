@@ -3,14 +3,23 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#include <X11/extensions/XTest.h>
 
 #define DEFAULT_SENSITIVITY 25
+
+// 	gcc -lncurses -lX11 -lXtst kb_mouse.c
+
+// 	dependencies
+// 		ncurses
+//		libxtst-dev (XTest.h) 
+//		X11
 
 // helpful
 // https://stackoverflow.com/questions/5848909/why-does-xwarppointer-only-work-once-while-in-a-loop
 // https://tronche.com/gui/x/xlib/input/XWarpPointer.html
 // https://stackoverflow.com/questions/14526522/how-to-get-screen-height-and-width-in-c
-//
+// https://linux.die.net/man/3/xtestfakebuttonevent
+// https://stackoverflow.com/questions/8767524/how-do-we-simulate-a-mouse-click-with-xlib-c
 
 int main (int argc, char * argv[])
 {
@@ -71,9 +80,13 @@ int main (int argc, char * argv[])
 			mouse_x -= speed;
 			mouse_y += speed;
 			break;
+		case '0':
+			XTestFakeButtonEvent(dpy, 1, True, CurrentTime);
+			break;
 		default:
 			break;
 		}
+		//printf("\n%d\n",key);
 		if (mouse_x > MAX_X) mouse_x = MAX_X;
 		if (mouse_x < 0) mouse_x = 0;
 		if (mouse_y > MAX_Y) mouse_y = MAX_Y;
