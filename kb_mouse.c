@@ -15,21 +15,27 @@
 // https://stackoverflow.com/questions/8767524/how-do-we-simulate-a-mouse-click-with-xlib-c
 // https://www.linuxquestions.org/questions/linux-software-2/simulate-right-click-550001/ (right mouse button)
 // https://stackoverflow.com/questions/1485116/capturing-keystrokes-in-gnu-linux-in-c (read keypress directly from /dev/input/eventX)
+//
+
+/*
+struct input_event {
+	struct timeval time;
+	__u16 type;
+	__u16 code;
+	__s32 value;
+};
+*/
 
 
 //	TODO
-//	Move from ncurses to reading keyboard for getting input, as this currently has to be the active window to work 
+//	nanosleep in between polls so that many events arent created before you can even lift your finger
+//	lower sens
+//	have a toggle bound to ./delete keypad key so that you can toggle this thing on and off while you need to input or something
 //	Have a click-and-hold thing, where the second false function isnt used
+//
 
 int main (int argc, char * argv[])
 {
-	// Init Ncurses
-	initscr();
-    noecho();
-    keypad(stdscr,TRUE);
-    curs_set(0); /* 0, 1, 2 */
-    cbreak();
-    	
 	// Init X
   	Display *dpy = XOpenDisplay(0);
 	Window root_window;
@@ -40,13 +46,11 @@ int main (int argc, char * argv[])
 	
 	char key;
 	int speed, mouse_x, mouse_y, MAX_Y, MAX_X;	
+	speed = DEFAULT_SENSITIVITY;
 	MAX_Y = ra.height;
 	MAX_X = ra.width;
 	mouse_x = ra.width/2;
 	mouse_y = ra.height/2;
-	//(argc > 1) ? (speed = argv[0]) : (speed = DEFAULT_SENSITIVITY);
-	//printf("%s",argv[0]);
-	speed = DEFAULT_SENSITIVITY;
 
 	int fd;
     if(argc < 2) {
@@ -55,6 +59,17 @@ int main (int argc, char * argv[])
     }
     fd = open(argv[1], O_RDONLY);
 	struct input_event ev;
+	
+/*
+ *	using input_event typename, which has:
+ *		code
+ *			this is the unique keycode
+ *		value
+ * 			0 for a key press
+ * 			1 for a key release
+ * 			2 for a key hold
+ */
+
     while (1) {
     	read(fd, &ev, sizeof(struct input_event));
     	if(ev.type == 1)
@@ -62,69 +77,45 @@ int main (int argc, char * argv[])
         	//printf("key %i state %i\n", ev.code, ev.value);
         	switch(ev.code) {
 			case K_UP:
-				printf("\n%s\n","up");
-				//int check_event_type();
+				printf("\n%s\n","MOVE UP");
+				mouse_y -= speed;
 				break;
 			case K_DOWN:
-				printf("\n%s\n","down");
+				printf("\n%s\n","MOVE DOWN");
+				mouse_y += speed;
 				break;
 			case K_RIGHT:
-				printf("\n%s\n","right");
+				printf("\n%s\n","MOVE RIGHT");
+				mouse_x += speed;
 				break;
 			case K_LEFT:
-				printf("\n%s\n","left");
+				printf("\n%s\n","MOVE LEFT");
+				mouse_x -= speed;
+				break;
+			case K_LCLICK:
+				/*
+				int check_event_type(ev.value) {
+					switch(ev.value
+				}
+				*/
+				printf("\n%s\n","LEFT CLICK");
+				XTestFakeButtonEvent(dpy, LMB, True, CurrentTime);
+				XTestFakeButtonEvent(dpy, LMB, False, CurrentTime);
+				break;
+			case K_MCLICK:
+				XTestFakeButtonEvent(dpy, MMB, True, CurrentTime);
+				XTestFakeButtonEvent(dpy, MMB, False, CurrentTime);
+				printf("\n%s\n","MIDDLE CLICK");
+				break;
+			case K_RCLICK:
+				XTestFakeButtonEvent(dpy, RMB, True, CurrentTime);
+				XTestFakeButtonEvent(dpy, RMB, False, CurrentTime);
+				printf("\n%s\n","RIGHT CLICK");
 				break;
 			default:
+				printf("fuck\n");
 				break;
 		}
-    }
-
-
-/*
-	while (1) {
-		//flushinp();
-		key = getch();
-		switch(key) {
-		case '8':
-			mouse_y -= speed;
-			break;
-		case '2':
-			mouse_y += speed;
-			break;
-		case '6':
-			mouse_x += speed;
-			break;
-		case '4':
-			mouse_x -= speed;
-			break;
-		case '9':
-			mouse_x += speed;
-			mouse_y -= speed;
-			break;
-		case '7':
-			mouse_x -= speed;
-			mouse_y -= speed;
-			break;
-		case '3':
-			mouse_x += speed;
-			mouse_y += speed;
-			break;
-		case '1':
-			mouse_x -= speed;
-			mouse_y += speed;
-			break;
-		case '0':
-			XTestFakeButtonEvent(dpy, LCLICK, True, CurrentTime);
-			XTestFakeButtonEvent(dpy, LCLICK, False, CurrentTime);
-			break;
-		case 5:
-			XTestFakeButtonEvent(dpy, 2, True, CurrentTime);
-			XTestFakeButtonEvent(dpy, 2, False, CurrentTime);
-		default:
-			break;
-		:
-	}	
-*/
 		if (mouse_x > MAX_X) mouse_x = MAX_X;
 		if (mouse_x < 0) mouse_x = 0;
 		if (mouse_y > MAX_Y) mouse_y = MAX_Y;
@@ -132,8 +123,8 @@ int main (int argc, char * argv[])
     	XWarpPointer(dpy, None, root_window, 0, 0, 0, 0, mouse_x, mouse_y);
 		XFlush(dpy);
     	XSync(dpy, False);
-
-	return 0;
+    }
+	exit(EXIT_SUCCESS);
 }
 	
 
