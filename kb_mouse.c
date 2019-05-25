@@ -1,16 +1,9 @@
-#include <stdio.h>
-#include <ncurses.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/XTest.h>
+#include "bindings.h"
+//	Need to run as sudo, because needs read access directly to device
 
-#define DEFAULT_SENSITIVITY 25
-
-// 	gcc -lncurses -lX11 -lXtst kb_mouse.c
+// 	gcc -lX11 -lXtst kb_mouse.c
 
 // 	dependencies
-// 		ncurses
 //		libxtst-dev (XTest.h) 
 //		X11
 
@@ -20,6 +13,13 @@
 // https://stackoverflow.com/questions/14526522/how-to-get-screen-height-and-width-in-c
 // https://linux.die.net/man/3/xtestfakebuttonevent
 // https://stackoverflow.com/questions/8767524/how-do-we-simulate-a-mouse-click-with-xlib-c
+// https://www.linuxquestions.org/questions/linux-software-2/simulate-right-click-550001/ (right mouse button)
+// https://stackoverflow.com/questions/1485116/capturing-keystrokes-in-gnu-linux-in-c (read keypress directly from /dev/input/eventX)
+
+
+//	TODO
+//	Move from ncurses to reading keyboard for getting input, as this currently has to be the active window to work 
+//	Have a click-and-hold thing, where the second false function isnt used
 
 int main (int argc, char * argv[])
 {
@@ -39,7 +39,7 @@ int main (int argc, char * argv[])
 	XGetWindowAttributes(dpy, DefaultRootWindow(dpy), &ra);
 	
 	char key;
-	int speed, mouse_x, mouse_y, MAX_Y, MAX_X ;
+	int speed, mouse_x, mouse_y, MAX_Y, MAX_X;	
 	MAX_Y = ra.height;
 	MAX_X = ra.width;
 	mouse_x = ra.width/2;
@@ -48,8 +48,41 @@ int main (int argc, char * argv[])
 	//printf("%s",argv[0]);
 	speed = DEFAULT_SENSITIVITY;
 
+	int fd;
+    if(argc < 2) {
+		printf("usage: %s <device>\n", argv[0]);
+		return 1;
+    }
+    fd = open(argv[1], O_RDONLY);
+	struct input_event ev;
+    while (1) {
+    	read(fd, &ev, sizeof(struct input_event));
+    	if(ev.type == 1)
+			// Debug
+        	//printf("key %i state %i\n", ev.code, ev.value);
+        	switch(ev.code) {
+			case K_UP:
+				printf("\n%s\n","up");
+				//int check_event_type();
+				break;
+			case K_DOWN:
+				printf("\n%s\n","down");
+				break;
+			case K_RIGHT:
+				printf("\n%s\n","right");
+				break;
+			case K_LEFT:
+				printf("\n%s\n","left");
+				break;
+			default:
+				break;
+		}
+    }
+
+
+/*
 	while (1) {
-		flushinp();
+		//flushinp();
 		key = getch();
 		switch(key) {
 		case '8':
@@ -81,12 +114,17 @@ int main (int argc, char * argv[])
 			mouse_y += speed;
 			break;
 		case '0':
-			XTestFakeButtonEvent(dpy, 1, True, CurrentTime);
+			XTestFakeButtonEvent(dpy, LCLICK, True, CurrentTime);
+			XTestFakeButtonEvent(dpy, LCLICK, False, CurrentTime);
 			break;
+		case 5:
+			XTestFakeButtonEvent(dpy, 2, True, CurrentTime);
+			XTestFakeButtonEvent(dpy, 2, False, CurrentTime);
 		default:
 			break;
-		}
-		//printf("\n%d\n",key);
+		:
+	}	
+*/
 		if (mouse_x > MAX_X) mouse_x = MAX_X;
 		if (mouse_x < 0) mouse_x = 0;
 		if (mouse_y > MAX_Y) mouse_y = MAX_Y;
@@ -94,7 +132,6 @@ int main (int argc, char * argv[])
     	XWarpPointer(dpy, None, root_window, 0, 0, 0, 0, mouse_x, mouse_y);
 		XFlush(dpy);
     	XSync(dpy, False);
-	}	
 
 	return 0;
 }
