@@ -1,12 +1,4 @@
 #include "bindings.h"
-//	Need to run as sudo, because needs read access directly to device
-
-// 	gcc -lX11 -lXtst kb_mouse.c
-// 	./<executable> </dev/input/eventX>
-
-// 	dependencies
-//		libxtst-dev (XTest.h) 
-//		X11
 
 // helpful
 // https://stackoverflow.com/questions/5848909/why-does-xwarppointer-only-work-once-while-in-a-loop
@@ -35,9 +27,7 @@ struct input_event {
 
 //	TODO
 // 
-//	put timer AFTER reading (i.e. still read, but dont do anything while timer is not ready
-//	
-//	Have a click-and-hold thing, where the second false function isnt used
+//	Click and drag
 //		
 
 int main (int argc, char * argv[])
@@ -137,19 +127,19 @@ int main (int argc, char * argv[])
 					switch(ev.value
 				}
 				*/
-				printf("\n%s\n","LEFT CLICK");
+				//printf("\n%s\n","LEFT CLICK");
 				XTestFakeButtonEvent(dpy, LMB, True, CurrentTime);
 				XTestFakeButtonEvent(dpy, LMB, False, CurrentTime);
 				break;
 			case K_MCLICK:
 				XTestFakeButtonEvent(dpy, MMB, True, CurrentTime);
 				XTestFakeButtonEvent(dpy, MMB, False, CurrentTime);
-				printf("\n%s\n","MIDDLE CLICK");
+				//printf("\n%s\n","MIDDLE CLICK");
 				break;
 			case K_RCLICK:
 				XTestFakeButtonEvent(dpy, RMB, True, CurrentTime);
 				XTestFakeButtonEvent(dpy, RMB, False, CurrentTime);
-				printf("\n%s\n","RIGHT CLICK");
+				//printf("\n%s\n","RIGHT CLICK");
 				break;
 			default:
 				ignore_key = 1;
