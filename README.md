@@ -7,6 +7,9 @@ This reads input directly from /dev, uses X11 library to move mouse cursor, simu
 ## Dependencies  
     libx11-dev  
     libxtst-dev  
+Compile:  
+
+    gcc -lX11 -lXtst xkbmouse.c -o xkbmouse
 
 ## Usage  
 Have to run with sudo (it reads directly from /dev/input/eventX)  
