@@ -1,5 +1,5 @@
 # x11-mouse-control
-Control mouse with keyboard/numpad on X11  
+Control mouse with keyboard/numpad on X11 windowing system  
 This was done for a full sized keyboard with a number pad.  
 I'm not sure if the keycodes from /dev will be the same for every keyboard, but you can change the bindings in bindings.h.  
 This reads input directly from /dev, uses X11 library to move mouse cursor, simulates key click events with XTest library.  
