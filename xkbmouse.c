@@ -2,6 +2,7 @@
 //	Need to run as sudo, because needs read access directly to device
 
 // 	gcc -lX11 -lXtst kb_mouse.c
+// 	./<executable> </dev/input/eventX>
 
 // 	dependencies
 //		libxtst-dev (XTest.h) 
@@ -28,11 +29,19 @@ struct input_event {
 
 
 //	TODO
+//
+//	diagonal movemnts
+//	ONLY AFFECT THE MOUSE IF THE KEY IS ON THE KEYPAD
 //	nanosleep in between polls so that many events arent created before you can even lift your finger
-//	lower sens
+//		fix this shit -> the timer needs to PREVENT READING, not just wait because this still takes input
+//		so this isnt really event waiting just a timer
+//		set 'waiting' flag or something
 //	have a toggle bound to ./delete keypad key so that you can toggle this thing on and off while you need to input or something
 //	Have a click-and-hold thing, where the second false function isnt used
-//
+//	Vary movement based on key "state"
+//		0 (pressed)	- pressed move more precisely
+//		2 (held)- move faster
+//		
 
 int main (int argc, char * argv[])
 {
@@ -44,9 +53,8 @@ int main (int argc, char * argv[])
 	XWindowAttributes ra;
 	XGetWindowAttributes(dpy, DefaultRootWindow(dpy), &ra);
 	
-	char key;
-	int speed, mouse_x, mouse_y, MAX_Y, MAX_X;	
-	speed = DEFAULT_SENSITIVITY;
+	int sens, mult, mouse_x, mouse_y, MAX_Y, MAX_X;	
+	sens = DEFAULT_SENSITIVITY;
 	MAX_Y = ra.height;
 	MAX_X = ra.width;
 	mouse_x = ra.width/2;
@@ -58,6 +66,7 @@ int main (int argc, char * argv[])
 		return 1;
     }
     fd = open(argv[1], O_RDONLY);
+	char key;
 	struct input_event ev;
 	
 /*
@@ -72,29 +81,48 @@ int main (int argc, char * argv[])
 
     while (1) {
     	read(fd, &ev, sizeof(struct input_event));
+
     	if(ev.type == 1)
+		{
 			// Debug
         	//printf("key %i state %i\n", ev.code, ev.value);
+        	
+			/* Set sensitivity/speed multiplyer if key is held */
+			(ev.value == 2) ? (mult=5) : (mult=1);
+
         	switch(ev.code) {
 			case K_UP:
-				printf("\n%s\n","MOVE UP");
-				mouse_y -= speed;
+
+
+				mouse_y -=sens*mult;
 				break;
 			case K_DOWN:
-				printf("\n%s\n","MOVE DOWN");
-				mouse_y += speed;
+				mouse_y +=sens*mult;
 				break;
 			case K_RIGHT:
-				printf("\n%s\n","MOVE RIGHT");
-				mouse_x += speed;
+				mouse_x +=sens*mult;
 				break;
 			case K_LEFT:
-				printf("\n%s\n","MOVE LEFT");
-				mouse_x -= speed;
+				mouse_x -=sens*mult;
 				break;
+			case K_NW:
+				mouse_y -=sens*mult;
+				mouse_x -=sens*mult;
+				break;	
+			case K_NE:
+				mouse_y -=sens*mult;
+				mouse_x +=sens*mult;
+				break;	
+			case K_SW:
+				mouse_y +=sens*mult;
+				mouse_x -=sens*mult;
+				break;	
+			case K_SE:
+				mouse_y +=sens*mult;
+				mouse_x +=sens*mult;
+				break;	
 			case K_LCLICK:
 				/*
-				int check_event_type(ev.value) {
 					switch(ev.value
 				}
 				*/
@@ -113,19 +141,48 @@ int main (int argc, char * argv[])
 				printf("\n%s\n","RIGHT CLICK");
 				break;
 			default:
-				printf("fuck\n");
 				break;
+			}
 		}
+		/* Keep mouse within screen boundaries */
 		if (mouse_x > MAX_X) mouse_x = MAX_X;
 		if (mouse_x < 0) mouse_x = 0;
 		if (mouse_y > MAX_Y) mouse_y = MAX_Y;
 		if (mouse_y < 0) mouse_y = 0;
+		
+		/* Move the pointer */
     	XWarpPointer(dpy, None, root_window, 0, 0, 0, 0, mouse_x, mouse_y);
 		XFlush(dpy);
     	XSync(dpy, False);
+		
+		/* Handle waiting flag */
+
+		/*
+		struct timespec req = {.tv_sec = 0, .tv_nsec = 50000000};
+		struct timespec rem, *a = &req, *b = &rem;
+		while (nanosleep(a, b) && errno == EINTR) {
+			struct timespec *tmp = a;
+				a = b;
+				b = tmp;
+		}
+		*/
     }
 	exit(EXIT_SUCCESS);
 }
 	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
