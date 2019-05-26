@@ -27,20 +27,17 @@ struct input_event {
 };
 */
 
+// 	NOT TODO
+//
+// 	I was having a problem where when I moved my actual mouse and hit any key, the cursor would jump back
+// 	to the position where this program moved it (because I do not consider the mouse position from outside 
+// 	this program)... Then I realized why the hell would anyone use this if they had a mouse anyways. Nice!
 
 //	TODO
-//
-//	diagonal movemnts
-//	ONLY AFFECT THE MOUSE IF THE KEY IS ON THE KEYPAD
-//	nanosleep in between polls so that many events arent created before you can even lift your finger
-//		fix this shit -> the timer needs to PREVENT READING, not just wait because this still takes input
-//		so this isnt really event waiting just a timer
-//		set 'waiting' flag or something
-//	have a toggle bound to ./delete keypad key so that you can toggle this thing on and off while you need to input or something
+// 
+//	put timer AFTER reading (i.e. still read, but dont do anything while timer is not ready
+//	
 //	Have a click-and-hold thing, where the second false function isnt used
-//	Vary movement based on key "state"
-//		0 (pressed)	- pressed move more precisely
-//		2 (held)- move faster
 //		
 
 int main (int argc, char * argv[])
@@ -53,7 +50,7 @@ int main (int argc, char * argv[])
 	XWindowAttributes ra;
 	XGetWindowAttributes(dpy, DefaultRootWindow(dpy), &ra);
 	
-	int sens, mult, mouse_x, mouse_y, MAX_Y, MAX_X;	
+	int sens, mult, ignore_key, wait_move, wait_click, mouse_x, mouse_y, MAX_Y, MAX_X;	
 	sens = DEFAULT_SENSITIVITY;
 	MAX_Y = ra.height;
 	MAX_X = ra.width;
@@ -79,12 +76,28 @@ int main (int argc, char * argv[])
  * 			2 for a key hold
  */
 
+	int msec = 0, trigger = 500; /* 500 msec = 1 sec */
+	int waiting;
+	clock_t before = clock();
+	clock_t difference;
+	ignore_key = 0;
     while (1) {
     	read(fd, &ev, sizeof(struct input_event));
 
+		/* Timer here */
+		if (waiting) {
+			while (msec < trigger) {
+				difference = clock() - before;
+				msec = difference * 1000 / CLOCKS_PER_SEC;
+			}
+			msec = 0;
+			waiting = 0;
+			continue;
+		}
+
     	if(ev.type == 1)
 		{
-			// Debug
+			/* Debug */
         	//printf("key %i state %i\n", ev.code, ev.value);
         	
 			/* Set sensitivity/speed multiplyer if key is held */
@@ -92,8 +105,6 @@ int main (int argc, char * argv[])
 
         	switch(ev.code) {
 			case K_UP:
-
-
 				mouse_y -=sens*mult;
 				break;
 			case K_DOWN:
@@ -141,8 +152,14 @@ int main (int argc, char * argv[])
 				printf("\n%s\n","RIGHT CLICK");
 				break;
 			default:
+				ignore_key = 1;
 				break;
 			}
+		}
+		/* Dont dont anything if key isnt one that is used */
+		if (ignore_key) {
+			ignore_key = 0;
+			continue;	
 		}
 		/* Keep mouse within screen boundaries */
 		if (mouse_x > MAX_X) mouse_x = MAX_X;
@@ -154,18 +171,9 @@ int main (int argc, char * argv[])
     	XWarpPointer(dpy, None, root_window, 0, 0, 0, 0, mouse_x, mouse_y);
 		XFlush(dpy);
     	XSync(dpy, False);
-		
-		/* Handle waiting flag */
 
-		/*
-		struct timespec req = {.tv_sec = 0, .tv_nsec = 50000000};
-		struct timespec rem, *a = &req, *b = &rem;
-		while (nanosleep(a, b) && errno == EINTR) {
-			struct timespec *tmp = a;
-				a = b;
-				b = tmp;
-		}
-		*/
+		/* Start wait timer */
+		waiting = 1;
     }
 	exit(EXIT_SUCCESS);
 }
