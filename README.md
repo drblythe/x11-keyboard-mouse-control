@@ -14,7 +14,7 @@ Compile:
 
 ## Usage  
 Have to run with sudo (it reads directly from /dev/input/eventX)  
-Have to also figure out which input event is your keyboard. Easy way is to "sudo cat /dev/input/event<number>" and mash your keyboard until strange hieroglyphics appear lol.  
+Have to also figure out which input event is your keyboard. Easy way is to "sudo cat /dev/input/eventX" (where X is some number) and mash your keyboard until strange hieroglyphics appear lol.  
 Then run :  
     
     sudo /path/to/executable /dev/input/event<number-for-keyboard>  
