@@ -36,4 +36,4 @@ Enter = right click
 Add click and drag
 
 ## Bugs
-There is <del>a rare</del> an uncommon problem where the mouse moves very slowly, pressing/toggling NumLock key fixes it. Not sure what the issue is
+There is <del>a rare</del> <del>an uncommon</del> a bug where the mouse sometimes moves slowly after pressing NumLock. Pressing/toggling NumLock key again fixes it.
